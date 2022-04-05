@@ -1,0 +1,31 @@
+body{
+    padding-top: 50px;
+}
+
+.card{
+    margin-bottom: 30px;
+    border-width: 3px;
+    border-color: green;
+    padding: 5px;
+}
+.input-group{
+    margin-bottom: 5px;
+}
+
+#error{
+    font-weight: bold;
+    color: red;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    left: 0;
+}
+input::-webkit-datetime-edit {
+    position: relative;
+    left: 25px;
+}
+input::-webkit-datetime-edit-fields-wrapper {
+    position: relative;
+    left: 15px;
+}
