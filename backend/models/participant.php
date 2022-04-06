@@ -1,14 +1,13 @@
 <?php
 
 class Participant {
-    public $id;
+    //public $id;
     public $username;
-    public $slot_id;
+    public $slot_ids;
 
-    public function __construct($id, $slot_id , $username) {
-        $this->slot_id = $slot_id;
-        $this->id = $id;
+    public function __construct(array $slot_ids, $username) {
+        $this->slot_ids = $slot_ids;
+        //$this->id = $id;
         $this->username = $username;
     }
-
 }

@@ -12,5 +12,4 @@ class Timeslot {
         $this->start_datetime = $start_datetime;
         $this->end_datetime = $end_datetime;
     }
-
 }

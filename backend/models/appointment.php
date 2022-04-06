@@ -18,8 +18,8 @@ class Appointment {
         $this->creator = $creator;
         $this->description = $description;
         $this->location = $location;
-        $this->creation_date = $creation_date;
-        $this->expiration_date = $expiration_date;
+        $this->creation_date = date("Y-m-d H:i:s", $creation_date);
+        $this->expiration_date = date("Y-m-d H:i:s", $expiration_date);
 
         $this->participants = array();
         $this->comments = array();
