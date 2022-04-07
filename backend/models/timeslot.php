@@ -9,7 +9,7 @@ class Timeslot {
     public function __construct($slot_id, $app_id, $start_datetime, $end_datetime){
         $this->slot_id = $slot_id;
         $this->app_id = $app_id;
-        $this->start_datetime = $start_datetime;
-        $this->end_datetime = $end_datetime;
+        $this->start_datetime = date("Y-m-d H:i:s", $start_datetime);
+        $this->end_datetime = date("Y-m-d H:i:s", $end_datetime);
     }
 }

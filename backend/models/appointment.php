@@ -8,6 +8,7 @@ class Appointment {
     public $location;
     public $creation_date;
     public $expiration_date;
+    public $isExpired;
     public $timeslots;
     public $participants;
     public $comments;
@@ -24,6 +25,34 @@ class Appointment {
         $this->participants = array();
         $this->comments = array();
         $this->timeslots = array();
+
+        if(strtotime("now") > $expiration_date){
+            $this->isExpired = true;
+        } else {
+            $this->isExpired = false;
+        }
+    }
+
+    public function containsParticipant($id): bool
+    {
+        foreach ($this->participants as $participant){
+            if ($participant->id == $id){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function getParticipantIndex($id): int
+    {
+        $counter = 0;
+        foreach ($this->participants as $participant){
+            if ($participant->id == $id){
+                return $counter;
+            }
+            $counter++;
+        }
+        return -1;
     }
 
     public function getAppointmentId(){

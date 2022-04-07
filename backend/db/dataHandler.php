@@ -5,12 +5,6 @@ include("./models/participant.php");
 include("./models/comment.php");
 class DataHandler
 {
-
-    private $demoApp;
-    private $demoTimeslots;
-    private $demoParticipants;
-    private $demoComments;
-
     private $connection;
 
     public function __construct(){
@@ -27,39 +21,6 @@ class DataHandler
         $this->connection->close();
     }
 
-    /*public function __construct(){
-
-        $this->demoApp = [
-            new Appointment(1, "Spazieren", "Oskar", "Spazieren gehen im Wald", "Wien", strtotime("now"), strtotime("next monday")),
-            new Appointment(2, "Wandern", "Oskar", "Spazieren gehen im Wald", "Wien", strtotime("now"), strtotime("Tomorrow")),
-            new Appointment(3, "Lernen", "Oskar", "Spazieren gehen im Wald", "Wien", strtotime("now"), strtotime("+3 days")),
-            new Appointment(4, "Schlafen", "Oskar", "Spazieren gehen im Wald", "Wien", strtotime("now"), strtotime("+1 month")),
-
-        ];
-
-        $this->demoComments = [
-          new Comment("Oskar", 1, "Hello World!"),
-          new Comment("Nico", 1, "Hello World!"),
-          new Comment("Marlis", 1, "Hello World!"),
-        ];
-
-        $this->demoTimeslots = [
-            new Timeslot(1, 1, "14:00:00", "17:00:00"),
-            new Timeslot(2, 1, "14:00:00", "17:00:00"),
-            new Timeslot(3, 1, "14:00:00", "17:00:00"),
-            new Timeslot(4, 2, "14:00:00", "17:00:00"),
-            new Timeslot(5, 3, "14:00:00", "17:00:00"),
-        ];
-
-        $this->demoParticipants = [
-            new Participant(array(1), "Thomas"),
-            new Participant(array(2, 1), "Nico"),
-            new Participant(array(2), "Marlis"),
-            new Participant(array(3), "Jassi"),
-            new Participant(array(4), "David"),
-            new Participant(array(4), "Max"),
-        ];
-    }*/
 
     public function getAppointmentList()
     {
@@ -67,11 +28,11 @@ class DataHandler
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
-        if($result->fetch_assoc()){
-            return $result->fetch_assoc();
-        } else {
-            return false;
+        $appointments = array();
+        while ($row = $result->fetch_assoc()){
+            $appointments[] = $row;
         }
+        return $appointments;
     }
 
     /**
@@ -80,49 +41,78 @@ class DataHandler
      */
     public function getAppointmentById($id): ?Appointment
     {
-        $result = null;
-        foreach ($this->demoApp as $val) {
-            if ($val->app_id == $id) {
-                $result = $val;
-            }
-        }
-
-        //TODO: check if Appointment is expired, if so, abort request
-
-        if (!$result){
+        $stmt = $this->connection->prepare("SELECT * from appointments where app_id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        //no matching appointment found
+        if ($result->num_rows != 1){
             return null;
         }
 
-        //get timeslots & user
-        foreach ($this->demoTimeslots as $slot) {
-            if ($slot->app_id == $id){
-                foreach ($this->demoParticipants as $participant){
-                    if (in_array($slot->slot_id, $participant->slot_ids)){
-                        $result->participants[] = $participant;
-                    }
-                }
-                $result->timeslots[] = $slot;
+        $data = $result->fetch_assoc();
+
+        $appointment = new Appointment($data["app_id"], $data["title"], $data["creator"], $data["description"], $data["location"], strtotime($data["creation_date"]), strtotime($data["expiration_date"]));
+
+        $stmt = $this->connection->prepare("select * from timeslots where app_id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+
+        // fetch timeslots
+        while ($ts_data = $result->fetch_assoc()){
+            $new_ts = new Timeslot($ts_data["slot_id"], $ts_data["app_id"], strtotime($ts_data["start_datetime"]), strtotime($ts_data["end_datetime"]));
+            $appointment->timeslots[] = $new_ts;
+        }
+
+        // fetch participants
+
+        $stmt = $this->connection->prepare("select user_id, username, slot_id, app_id from timeslots join chosen_timeslots using(slot_id) join participants using(user_id) where app_id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+
+        while ($part_data = $result->fetch_assoc()){
+            //check if the participant has already been added to the array
+            if ($appointment->containsParticipant($part_data["user_id"])){
+                $i = $appointment->getParticipantIndex($part_data["user_id"]);
+                $appointment->participants[$i]->addSlot($part_data["slot_id"]);
+            } else {
+                $new_part = new Participant($part_data["user_id"], $part_data["username"]);
+                $new_part->addSlot($part_data["slot_id"]);
+                $appointment->participants[] = $new_part;
             }
         }
 
-        //get comments
-        foreach ($this->demoComments as $comment){
-            if ($comment->app_id = $result->app_id){
-                $result->comments[] = $comment;
-            }
+        // fetch comments
+        $stmt = $this->connection->prepare("select * from comments join participants using(user_id) where app_id = ?");
+        $stmt->bind_param("i", $app);
+        $app = $appointment->app_id;
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+
+        while ($comm_data = $result->fetch_assoc()){
+            $new_comm = new Comment($comm_data["username"], $part_data["app_id"], $comm_data["message"]);
+            $appointment->comments[] = $new_comm;
         }
 
-        return $result;
+        return $appointment;
+
     }
 
     public function addTimeslot($app_id, $start, $end){
-        $new_slot = new Timeslot(10, $app_id, $start, $end);
+        /*$new_slot = new Timeslot(10, $app_id, $start, $end);
 
         foreach ($this->demoApp as $app){
             if ($app->app_id == $app_id){
                 $app->timeslots[] = $new_slot;
             }
-        }
+        }*/
+        return null;
     }
 
     /**
@@ -130,11 +120,13 @@ class DataHandler
      * @param string $creator
      * @param string $description
      * @param string $location
+     * @param int $creation_date
      * @param string $expiration_date
      * @return bool
      */
-    public function addNewAppointment(string $title, string $creator, string $description, string $location, int $creation_date, string $expiration_date): bool
-    {
+
+    public function addNewAppointment(string $title, string $creator, string $description, string $location, int $creation_date, string $expiration_date): ?bool
+    {   /*
         $ids = array();
         foreach ($this->demoApp as $appointment){
             $ids[] = $appointment->app_id;
@@ -149,16 +141,19 @@ class DataHandler
         } else {
             return false;
         }
+        */
+        return null;
     }
 
     /**
      * @param int $app_id
      * @param array $slot_ids
      * @param $username
-     * @return bool
+     * @return bool|null
      */
-    public function addVotes(int $app_id, array $slot_ids, $username): bool
+    public function addVotes(int $app_id, array $slot_ids, $username)
     {
+        /*
         $appointment = $this->getAppointmentById($app_id);
         if (!$appointment){
             return false;
@@ -166,25 +161,13 @@ class DataHandler
 
         $appointment->participants[] = new Participant($slot_ids, $username);
         return true;
+        */
+        return null;
 
     }
 
     public function getCommentsByAppId($param)
     {
-        $result = null;
-        foreach ($this->demoApp as $val) {
-            if ($val->app_id == $param) {
-                $result = $val;
-            }
-        }
-
-        $comments = array();
-
-        foreach ($this->demoComments as $comment){
-            if ($comment->app_id = $result->app_id){
-                $comments[] = $comment;
-            }
-        }
-        return $comments;
+        return null;
     }
 }
