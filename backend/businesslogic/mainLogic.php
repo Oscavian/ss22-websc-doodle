@@ -16,13 +16,6 @@ class MainLogic {
             case "getAppointmentById":
                 $res = $this->dh->getAppointmentById($param);
                 break;
-            case "getTimeslotsByAppId":
-                break;
-            case "getCommentsbyAppId":
-                $this->dh->getCommentsByAppId($param);
-                break;
-            case "checkIfExpiredByAppId":
-                break;
             default:
                 $res = null;
                 break;
@@ -35,8 +28,6 @@ class MainLogic {
         switch ($payload->method){
             case "newAppointment":
                 $res = $this->newAppointment($payload);
-                break;
-            case "addTimeslot":
                 break;
             case "addVotes":
                 $res = $this->addVotes($payload);
@@ -60,7 +51,9 @@ class MainLogic {
             !isset($payload->creator) ||
             !isset($payload->description) ||
             !isset($payload->location) ||
-            !isset($payload->expiration_date)) {
+            !isset($payload->expiration_date) ||
+            !isset($payload->timeslots) ||
+            !is_array($payload->timeslots)) {
             $res["success"] = false;
             $res["invalidPayload"] = true;
             return $res;
@@ -75,9 +68,9 @@ class MainLogic {
             return $res;
         }
 
-        $this->dh->addNewAppointment($payload->title, $payload->creator, $payload->description, $payload->location, $creation_date, $payload->expiration_date)
+        $this->dh->addNewAppointment($payload->title, $payload->creator, $payload->description, $payload->location, $creation_date, $payload->expiration_date, $payload->timeslots)
             ? $res["success"] = true : $res["success"] = false;
-        return $this->dh->getAppointmentList();
+        return $res;
     }
 
     /**
@@ -106,7 +99,7 @@ class MainLogic {
 
 
         $res["success"] = true;
-        return $this->dh->getAppointmentById($payload->app_id);
+        return $res;
     }
 }
 
