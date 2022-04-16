@@ -18,7 +18,7 @@ class DataHandler
     }
 
     public function __destruct(){
-        $this->connection->close();
+        //$this->connection->close();
     }
 
 
@@ -30,7 +30,7 @@ class DataHandler
         $stmt->close();
         $appointments = array();
         while ($row = $result->fetch_assoc()){
-            $app = new Appointment($row["id"], $row["title"], $row["creator"], $row["description"], $row["location"], $row["creation_date"], $row["expiration_date"]);
+            $app = new Appointment($row["app_id"], $row["title"], $row["creator"], $row["description"], $row["location"], strtotime($row["creation_date"]), strtotime($row["expiration_date"]));
             $appointments[] = $app;
         }
         return $appointments;
@@ -115,14 +115,14 @@ class DataHandler
      * @return bool
      */
 
-    public function addNewAppointment(string $title, string $creator, string $description, string $location, int $creation_date, string $expiration_date, array $timeslots): ?bool
+    public function addNewAppointment(string $title, string $creator, string $description, string $location, string $creation_date, string $expiration_date, array $timeslots): bool
     {
-        $stmt = $this->connection->prepare("insert into appointments (title, creator, description, location, creation_date, expiration_date values (?, ?, ?, ?, ?, ?))");
-        $stmt->bind_param("ssssii", $title, $creator, $description, $location, $creation_date, $expiration_date);
+        $stmt = $this->connection->prepare("insert into appointments (title, creator, description, location, creation_date, expiration_date) values (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssss", $title, $creator, $description, $location, $creation_date, $expiration_date);
         if(!$stmt->execute()){
             return false;
         }
-        $stmt->close();
+        $stmt->reset();
 
         if (empty($timeslots)){
             return true;
@@ -131,15 +131,18 @@ class DataHandler
         $stmt = $this->connection->prepare("select app_id from appointments order by app_id desc limit 1");
         $stmt->execute();
         $stmt->bind_result($new_app_id);
+        $stmt->fetch();
         $stmt->close();
         foreach ($timeslots as $slot){
             $stmt = $this->connection->prepare("insert into timeslots (app_id, start_datetime, end_datetime) values (?, ?, ?)");
-            $stmt->bind_param("iii", $slot->app_id, $slot->start_datetime, $end_datetime);
+            $stmt->bind_param("iss", $new_app_id, $slot->start_datetime, $slot->end_datetime);
+
             if (!$stmt->execute()) {
                 return false;
             }
-            $stmt->close();
+            $stmt->reset();
         }
+        $stmt->close();
         return true;
     }
 
@@ -169,7 +172,7 @@ class DataHandler
         $stmt->close();
         //insert into chosen_timeslots
         foreach ($slot_ids as $id){
-            $stmt = $this->connection->prepare("insert into chosen_participants (user_id, slot_id) values (?, ?)");
+            $stmt = $this->connection->prepare("insert into chosen_timeslots (user_id, slot_id) values (?, ?)");
             $stmt->bind_param("ii", $new_user, $id);
         }
         $stmt->close();

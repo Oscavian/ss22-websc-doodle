@@ -43,6 +43,24 @@ class MainLogic {
 
     /**
      * @param $payload
+     *   {
+     *      "method": "newAppointment",
+     *      "title": "Spazieren",
+     *      "creator": "Lena",
+     *      "description": "Spazieren gehen im Wald",
+     *      "location": "Wien",
+     *      "expiration_date": "19-04-2022 00:00:00",
+     *      "timeslots": [
+     *          {
+     *              "start_datetime": "17-04-2022 12:00:00",
+     *              "end_datetime": "17-04-2022 17:30:00"
+     *          },
+     *          {
+     *              "start_datetime": "18-04-2022 13:00:00",
+     *              "end_datetime": "18-04-2022 19:30:00"
+     *          }
+     *      ]
+     *  }
      * @return array
      */
     private function newAppointment($payload): ?array
@@ -62,10 +80,24 @@ class MainLogic {
         $creation_date = (int)date(time());
         $payload->expiration_date = strtotime($payload->expiration_date);
 
+        //check if expired date is later than creation date
         if ($creation_date > $payload->expiration_date){
             $res["success"] = false;
             $res["invalidPayload"] = true;
             return $res;
+        }
+
+        $creation_date = date("Y-m-d H:i:s", $creation_date);
+        $payload->expiration_date = date("Y-m-d H:i:s", $payload->expiration_date);
+
+        foreach ($payload->timeslots as $slot){
+            //format input date
+            //TODO: maybe check if end is after start
+            $slot->start_datetime = strtotime($slot->start_datetime);
+            $slot->start_datetime = date("Y-m-d H:i:s", $slot->start_datetime);
+
+            $slot->end_datetime = strtotime($slot->end_datetime);
+            $slot->end_datetime = date("Y-m-d H:i:s", $slot->end_datetime);
         }
 
         $this->dh->addNewAppointment($payload->title, $payload->creator, $payload->description, $payload->location, $creation_date, $payload->expiration_date, $payload->timeslots)
