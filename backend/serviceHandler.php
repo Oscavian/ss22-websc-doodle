@@ -1,5 +1,5 @@
 <?php
-include("businesslogic/mainLogic.php");
+require_once "businesslogic/mainLogic.php";
 
 $param = "";
 $method = "";
