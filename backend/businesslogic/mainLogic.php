@@ -16,13 +16,6 @@ class MainLogic {
             case "getAppointmentById":
                 $res = $this->dh->getAppointmentById($param);
                 break;
-            case "getTimeslotsByAppId":
-                break;
-            case "getCommentsbyAppId":
-                $this->dh->getCommentsByAppId($param);
-                break;
-            case "checkIfExpiredByAppId":
-                break;
             default:
                 $res = null;
                 break;
@@ -35,8 +28,6 @@ class MainLogic {
         switch ($payload->method){
             case "newAppointment":
                 $res = $this->newAppointment($payload);
-                break;
-            case "addTimeslot":
                 break;
             case "addVotes":
                 $res = $this->addVotes($payload);
@@ -52,6 +43,24 @@ class MainLogic {
 
     /**
      * @param $payload
+     *   {
+     *      "method": "newAppointment",
+     *      "title": "Spazieren",
+     *      "creator": "Lena",
+     *      "description": "Spazieren gehen im Wald",
+     *      "location": "Wien",
+     *      "expiration_date": "19-04-2022 00:00:00",
+     *      "timeslots": [
+     *          {
+     *              "start_datetime": "17-04-2022 12:00:00",
+     *              "end_datetime": "17-04-2022 17:30:00"
+     *          },
+     *          {
+     *              "start_datetime": "18-04-2022 13:00:00",
+     *              "end_datetime": "18-04-2022 19:30:00"
+     *          }
+     *      ]
+     *  }
      * @return array
      */
     private function newAppointment($payload): ?array
@@ -60,7 +69,9 @@ class MainLogic {
             !isset($payload->creator) ||
             !isset($payload->description) ||
             !isset($payload->location) ||
-            !isset($payload->expiration_date)) {
+            !isset($payload->expiration_date) ||
+            !isset($payload->timeslots) ||
+            !is_array($payload->timeslots)) {
             $res["success"] = false;
             $res["invalidPayload"] = true;
             return $res;
@@ -69,15 +80,29 @@ class MainLogic {
         $creation_date = (int)date(time());
         $payload->expiration_date = strtotime($payload->expiration_date);
 
+        //check if expired date is later than creation date
         if ($creation_date > $payload->expiration_date){
             $res["success"] = false;
             $res["invalidPayload"] = true;
             return $res;
         }
 
-        $this->dh->addNewAppointment($payload->title, $payload->creator, $payload->description, $payload->location, $creation_date, $payload->expiration_date)
+        $creation_date = date("Y-m-d H:i:s", $creation_date);
+        $payload->expiration_date = date("Y-m-d H:i:s", $payload->expiration_date);
+
+        foreach ($payload->timeslots as $slot){
+            //format input date
+            //TODO: maybe check if end is after start
+            $slot->start_datetime = strtotime($slot->start_datetime);
+            $slot->start_datetime = date("Y-m-d H:i:s", $slot->start_datetime);
+
+            $slot->end_datetime = strtotime($slot->end_datetime);
+            $slot->end_datetime = date("Y-m-d H:i:s", $slot->end_datetime);
+        }
+
+        $this->dh->addNewAppointment($payload->title, $payload->creator, $payload->description, $payload->location, $creation_date, $payload->expiration_date, $payload->timeslots)
             ? $res["success"] = true : $res["success"] = false;
-        return $this->dh->getAppointmentList();
+        return $res;
     }
 
     /**
@@ -106,7 +131,7 @@ class MainLogic {
 
 
         $res["success"] = true;
-        return $this->dh->getAppointmentById($payload->app_id);
+        return $res;
     }
 }
 

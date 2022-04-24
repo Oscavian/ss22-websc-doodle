@@ -18,7 +18,7 @@ class DataHandler
     }
 
     public function __destruct(){
-        $this->connection->close();
+        //$this->connection->close();
     }
 
 
@@ -30,7 +30,8 @@ class DataHandler
         $stmt->close();
         $appointments = array();
         while ($row = $result->fetch_assoc()){
-            $appointments[] = $row;
+            $app = new Appointment($row["app_id"], $row["title"], $row["creator"], $row["description"], $row["location"], strtotime($row["creation_date"]), strtotime($row["expiration_date"]));
+            $appointments[] = $app;
         }
         return $appointments;
     }
@@ -39,7 +40,7 @@ class DataHandler
      * @param $id int Appointment-ID
      * @return Appointment|null
      */
-    public function getAppointmentById($id): ?Appointment
+    public function getAppointmentById(int $id): ?Appointment
     {
         $stmt = $this->connection->prepare("SELECT * from appointments where app_id = ?");
         $stmt->bind_param("i", $id);
@@ -104,17 +105,6 @@ class DataHandler
 
     }
 
-    public function addTimeslot($app_id, $start, $end){
-        /*$new_slot = new Timeslot(10, $app_id, $start, $end);
-
-        foreach ($this->demoApp as $app){
-            if ($app->app_id == $app_id){
-                $app->timeslots[] = $new_slot;
-            }
-        }*/
-        return null;
-    }
-
     /**
      * @param string $title
      * @param string $creator
@@ -125,24 +115,35 @@ class DataHandler
      * @return bool
      */
 
-    public function addNewAppointment(string $title, string $creator, string $description, string $location, int $creation_date, string $expiration_date): ?bool
-    {   /*
-        $ids = array();
-        foreach ($this->demoApp as $appointment){
-            $ids[] = $appointment->app_id;
-        }
-        $new_id = max($ids) + 1;
-
-        $new_app = new Appointment($new_id, $title, $creator, $description, $location, $creation_date, $expiration_date);
-        $this->demoApp[] = $new_app;
-
-        if ($new_app->app_id == max($ids) + 1){
-            return true;
-        } else {
+    public function addNewAppointment(string $title, string $creator, string $description, string $location, string $creation_date, string $expiration_date, array $timeslots): bool
+    {
+        $stmt = $this->connection->prepare("insert into appointments (title, creator, description, location, creation_date, expiration_date) values (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssss", $title, $creator, $description, $location, $creation_date, $expiration_date);
+        if(!$stmt->execute()){
             return false;
         }
-        */
-        return null;
+        $stmt->reset();
+
+        if (empty($timeslots)){
+            return true;
+        }
+
+        $stmt = $this->connection->prepare("select app_id from appointments order by app_id desc limit 1");
+        $stmt->execute();
+        $stmt->bind_result($new_app_id);
+        $stmt->fetch();
+        $stmt->close();
+        foreach ($timeslots as $slot){
+            $stmt = $this->connection->prepare("insert into timeslots (app_id, start_datetime, end_datetime) values (?, ?, ?)");
+            $stmt->bind_param("iss", $new_app_id, $slot->start_datetime, $slot->end_datetime);
+
+            if (!$stmt->execute()) {
+                return false;
+            }
+            $stmt->reset();
+        }
+        $stmt->close();
+        return true;
     }
 
     /**
@@ -151,23 +152,32 @@ class DataHandler
      * @param $username
      * @return bool|null
      */
-    public function addVotes(int $app_id, array $slot_ids, $username)
+    public function addVotes(int $app_id, array $slot_ids, $username): bool
     {
-        /*
+
         $appointment = $this->getAppointmentById($app_id);
-        if (!$appointment){
+        if (!$appointment || $appointment->isExpired){
             return false;
         }
 
-        $appointment->participants[] = new Participant($slot_ids, $username);
+        //insert new user
+        $stmt = $this->connection->prepare("insert into participants (username) values (?)");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $stmt->close();
+        //select user_id
+        $stmt = $this->connection->prepare("select user_id from participants order by user_id desc limit 1");
+        $stmt->execute();
+        $stmt->bind_result($new_user);
+        $stmt->close();
+        //insert into chosen_timeslots
+        foreach ($slot_ids as $id){
+            $stmt = $this->connection->prepare("insert into chosen_timeslots (user_id, slot_id) values (?, ?)");
+            $stmt->bind_param("ii", $new_user, $id);
+        }
+        $stmt->close();
         return true;
-        */
-        return null;
 
     }
 
-    public function getCommentsByAppId($param)
-    {
-        return null;
-    }
 }
