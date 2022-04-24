@@ -20,8 +20,9 @@ function loadAppointments(){
         dataType: "json",
         success: function(response){
             console.log(response);
-            $.each(response, function (number, id){
-                $("#listitems").append("<li class='list-group-item'><b>" + id['title'] + "</b></li>");
+            $.each(response, function (i, p){
+                $("#listitems").append("<li class='list-group-item'><b>" + p['title'] + "</b></li>");
+                $("#listitems li:last-child").attr("data-id", p['app_id']);
             });
             $("#listitems").on("click", "li", loadDetails);
         },
@@ -38,24 +39,25 @@ function loadAppointments(){
 function loadDetails(){
     $("#detailitem").empty();
     $("#details").show();
-    console.log($(this).text());
-    $("#detailitem").append("<li class='list-group-item'>" + $(this).text() + "</li>");
-    // AJAX mit Suche nach title
-    /*$.ajax({
+    console.log($(this).attr('data-id'));
+    // AJAX mit Suche nach id
+    $.ajax({
         type:"GET",
         url: "../backend/serviceHandler.php",
         chache: false,
-        data: {method: "getAppointmentByName", param: $(this).text()},
+        data: {method: "getAppointmentById", param: $(this).attr('data-id')},
         dataType: "json",
         success: function(response){
             console.log(response);
-            $.each(response, function (){
-                $("#detailitem").append("<li class='list-group-item'>" + $(this).text() + "</li>");
-            });
+            console.log(response.creator);
+            $("#detailitem").append("<li class='list-group-item'><b>" + response.title + "</b></li>");
+            $("#detailitem").append("<li class='list-group-item'>" + response.creator + "</li>");
+            $("#detailitem").append("<li class='list-group-item'>" + response.description + "</li>");
+            $("#detailitem").append("<li class='list-group-item'>" + response.location + "</li>");
         },
         error: function(response){
         }
-    }); */
+    });
 }
 
 function sendNewData(){
