@@ -21,6 +21,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     position: absolute;
     left: 0;
 }
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    left: 0;
+}
 input::-webkit-datetime-edit {
     position: relative;
     left: 25px;
