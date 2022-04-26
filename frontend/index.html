@@ -32,21 +32,23 @@
         <ul class="list-group list-group-flush" id="detailitem">
 
         </ul>
-        <div id="timeslots">
+        <div id="timeslots" class="mb-1">
           
         </div>
+        <div id="entryFields">
+          <div id="name" class="input-group">
+            <span class="input-group-text input-group-left-example">Name:</span>
+            <input class="form-control" type="text" id="partName" placeholder="your name">
+          </div>
+          <div id="comment" class="input-group">
+            <span class="input-group-text input-group-left-example">Kommentar:</span>
+            <input class="form-control" type="text" id="partComm" placeholder="your comment (optional)">
+          </div>
+        </div>
+        <button class="btn btn-primary mb-1" onclick="addVotes()">Eintragen</button>
         <ul class="list-group list-group-flush" id="partAndComm">
           
         </ul>
-        <div id="name" class="input-group">
-          <span class="input-group-text input-group-left-example">Name:</span>
-          <input class="form-control" type="text" id="partName" placeholder="your name">
-        </div>
-        <div id="comment" class="input-group">
-          <span class="input-group-text input-group-left-example">Kommentar:</span>
-          <input class="form-control" type="text" id="partComm" placeholder="your comment (optional)">
-        </div>
-        <button class="btn btn-primary" onclick="addVotes()">Eintragen</button>
       </div>
     </div>
 
@@ -71,8 +73,10 @@
         <input class="form-control" type="text" id="newLocation" placeholder="location">
       </div>
       <div class="input-group">
-        <span class="input-group-text input-group-left-example">Timeslot 1:</span>
-        <input class="form-control" type="datetime-local" onkeypress="return false" id="timeslot_1">
+        <span class="input-group-text input-group-left-example">Timeslot 1 von:</span>
+        <input class="form-control" type="datetime-local" onkeypress="return false" id="timeslot_1_start">
+        <span class="input-group-text input-group-left-example">bis:</span>
+        <input class="form-control" type="datetime-local" onkeypress="return false" id="timeslot_1_end">
       </div>
       <div id="addedTimeslots">
 
