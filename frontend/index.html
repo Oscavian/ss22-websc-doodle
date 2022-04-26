@@ -15,7 +15,7 @@
  <div class="container">
     <h1 class="text-center text-success pb-5">Doodle - finde den besten Termin</h1>
 
-    <!-- Übersicht/Liste -->
+    <!-- Übersicht aller Appointments -->
     <div id="liste">
       <h3 class="text-success">Appointments:</h3>
       <div class="card">
@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <!-- Detailansicht -->
+    <!-- Detailansicht des ausgewählten Appointments -->
     <div id="details">
       <h3 class="text-success">Detailansicht:</h3>
       <div class="card">
@@ -45,14 +45,14 @@
             <input class="form-control" type="text" id="partComm" placeholder="your comment (optional)">
           </div>
         </div>
-        <button class="btn btn-primary mb-1" onclick="addVotes()">Eintragen</button>
+        <button class="btn btn-primary mb-1" id="voteBtn" onclick="addVotes()">Eintragen</button>
         <ul class="list-group list-group-flush" id="partAndComm">
           
         </ul>
       </div>
     </div>
 
-    <!-- Appointment anlegen // mögliche Timeslots definieren -->
+    <!-- neues Appointment anlegen -->
     <div id="anlegen">
       <h3 class="text-success">Appointment erstellen:</h3>
       <div class="card">

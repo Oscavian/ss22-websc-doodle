@@ -1,4 +1,4 @@
-function getDate(){
+function getDate(){ // findet das aktuelle Datum heraus
     var today = new Date();
     var dd = String(today.getDate()).padStart(2, '0');
     var mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -6,7 +6,7 @@ function getDate(){
     var dateNow = yyyy + '-' + mm + '-' + dd;
     return dateNow;
 }
-function getDateAndTime(){
+function getDateAndTime(){ // findet zusätzlich die aktuelle Zeit heraus
     var dateTimeNow = getDate();
     var today = new Date();
     var hh = String(today.getHours());
@@ -16,7 +16,7 @@ function getDateAndTime(){
 }
 $(document).ready(function (){ // wird ausgeführt sobald die Seite geladen ist
     var dateNow = getDate();
-    $('#newExpirationDate').attr('min', dateNow);
+    $('#newExpirationDate').attr('min', dateNow); // hierdurch kann kein vergangenes Datum ausgewählt werden
     dateNow = getDateAndTime();
     $('#timeslot_1').attr('min', dateNow);
     $("#liste").hide();
@@ -24,7 +24,7 @@ $(document).ready(function (){ // wird ausgeführt sobald die Seite geladen ist
     loadAppointments();
 });
 
-function addNewTimeslot(counter){
+function addNewTimeslot(counter){ // sorgt dafür dass weitere Möglichkeiten für Timeslots bei der Appointmenterstellung erscheinen
     $("#addedTimeslots").append("<div class='input-group'><span class='input-group-text input-group-left-example'>Timeslot " + counter + " von:</span><input class='form-control' type='datetime-local' onkeypress='return false' id='timeslot_" + counter + "_start'><span class='input-group-text input-group-left-example'>bis:</span><input class='form-control' type='datetime-local' onkeypress='return false' id='timeslot_" + counter + "_end'></div>")
     var dateTimeNow = getDateAndTime();
     $("input[type=datetime-local]").attr('min', dateTimeNow);
@@ -32,7 +32,7 @@ function addNewTimeslot(counter){
     $("#btnAddTimeslot").attr('onclick', 'addNewTimeslot(' + counter + ')');
 }
 
-function loadAppointments(){
+function loadAppointments(){ // liest und schreibt alle Appointments die es gibt
     $.ajax({
         type:"GET",
         url: "../backend/serviceHandler.php",
@@ -42,13 +42,13 @@ function loadAppointments(){
         success: function(response){
             console.log(response);
             $.each(response, function (i, p){
-                if(p['isExpired'] == false){
+                if(p['isExpired'] == false){ 
                     $("#listitems").append("<li class='list-group-item'><b>" + p['title'] + "</b></li>");
                 }
-                else{
+                else{ // wenn das Appoitment abgelaufen ist, wird dieses anders dargestellt
                     $("#listitems").append("<li class='list-group-item' style='color: grey'><b>" + p['title'] + "</b></li>");
                 }
-                $("#listitems li:last-child").attr("data-id", p['app_id']);
+                $("#listitems li:last-child").attr("data-id", p['app_id']); // die id des Appointments wird hier für später gespeichert
             });
             $("#listitems").on("click", "li", loadDetails);
         },
@@ -62,7 +62,7 @@ function loadAppointments(){
     $("#liste").show();
 }
 
-function loadDetails(){
+function loadDetails(){ // zeigt die Details und Votemöglichkeiten für das ausgewählte Appointment (wenn nicht abgelaufen)
     $("#detailitem").empty();
     $("#partAndComm").empty();
     $("#timeslots").empty();
@@ -75,6 +75,9 @@ function loadDetails(){
         dataType: "json",
         success: function(response){
             console.log(response);
+            if(response.isExpired == true){ // Meldung für den User falls Appointment bereits abgelaufen
+                $("#detailitem").append("<li class='list-group-item' style='color: red'><b>Dieses Appointment ist bereits abgelaufen!</b></li>");
+            }
             $("#detailitem").append("<li class='list-group-item'><b>" + response.title + "</b></li>");
             $("#detailitem").append("<li class='list-group-item'>von <u>" + response.creator + "</u></li>");
             $("#detailitem").append("<li class='list-group-item'>" + response.description + "</li>");
@@ -84,11 +87,12 @@ function loadDetails(){
                 if(response.isExpired == false){
                     $("#timeslots").append("<label class='list-group-item'><input class='form-check-input me-1' type='checkbox' checkbox-id='" + response.timeslots[counter].slot_id + "'>" + response.timeslots[counter].start_datetime + " bis " + response.timeslots[counter].end_datetime + "</label>");
                     $("#entryFields").show();
+                    $("#voteBtn").show();
                 }
-                else{
+                else{ // wenn abgelaufen, soll man nicht mehr wählen, Namen eintragen und voten können
                     $("#entryFields").hide();
+                    $("#voteBtn").hide();
                     $("#timeslots").append("<label class='list-group-item me-1'>" + response.timeslots[counter].start_datetime + " bis " + response.timeslots[counter].end_datetime + "</label>");
-                    
                 }
                 counter++;
             });
@@ -96,21 +100,23 @@ function loadDetails(){
             $("#partAndComm").append("<li class='list-group-item'><b>derzeitige Votes</b></li>");
             $.each(response.participants, function() {
                 $("#partAndComm").append("<li class='list-group-item'><u>" + response.participants[counter].username + "</u> hat folgende Timeslots gewählt:</li>");
-                let slotCounter = 0;
+                let partSlotCounter = 0
                 $.each(response.participants[counter].slot_ids, function(){
+                    let slotCounter = 0;
                     $.each(response.timeslots, function(){
-                        if((response.participants[counter].slot_ids) == (response.timeslots[slotCounter].slot_id)){
+                        if((response.participants[counter].slot_ids[partSlotCounter]) == (response.timeslots[slotCounter].slot_id)){
                             $("#partAndComm").append("<li class='list-group-item'>" + response.timeslots[slotCounter].start_datetime + " bis " + response.timeslots[slotCounter].end_datetime + "</li>");
                         }
                         slotCounter++;
                     });
-                    counter++;
+                    partSlotCounter++;
                 });
+                counter++;
             });
             $("#partAndComm").append("<li class='list-group-item'><b>derzeitige Kommentare</b></li>");
             counter = 0;
-            $.each(response.comments, function(){
-                $("#partAndComm").append("<li class='list-group-item'" + response.comments[counter] + "</li>");
+            $.each(response.comments, function(){ // zeigt jeden Kommentar und den zugehörigen User an
+                $("#partAndComm").append("<li class='list-group-item'>" + response.comments[counter].username + ": " + response.comments[counter].message + "</li>");
                 counter++;
             });
         },
@@ -122,7 +128,7 @@ function loadDetails(){
     $("#details").show();
 }
 
-function sendNewData(){
+function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft zuerst ob alle Felder ausgefüllt wurden
     if(!$("#newTitle").val()){
         $("#titleError").remove();
         $("#titleCard").after("<div id='titleError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen einen Titel eingeben um das Appointment zu erstellen' readonly></div>")
@@ -162,7 +168,7 @@ function sendNewData(){
     var end_datetime = "";
     var newTimeslots = [];
     let counter = 0;
-    $("input[type=datetime-local]").each(function(){
+    $("input[type=datetime-local]").each(function(){ // speichert alle Timeslots, abwechselnd als start und end Timeslot
         if(counter % 2 == 0){
             start_datetime = $(this).val();
         }
@@ -175,9 +181,9 @@ function sendNewData(){
     var newData = {title: newTitle, creator: newCreator, description: newDescription, location: newLocation, expirationDate: expiration_date, timeslots: newTimeslots}
     console.log(newData);
     newData = JSON.stringify(newData);
-    $("input").val("");
+    $("input").val(""); // alle Eingabefelder werden geleert nachdem alle Informationen beschaffen wurden
     console.log(newData);
-    $.ajax({
+    $.ajax({ // schicken ans Backend für die weitere Verarbeitung und Eintragung in die DB
         type: "POST",
         url: "../backend/serviceHandler.php",
         chache: false,
@@ -187,7 +193,7 @@ function sendNewData(){
             $("<p>Appointment wurde hinzugefügt</p>").before("#anlegen")
         },
         error: function(){
-
+            $("<p style='color: red'><b>Ein Fehler ist aufgetreten :(</b></p>").before("#anlegen")
         }
     });
     $("#btnAddTimeslot").attr('onclick', 'addNewTimeslot(2)');
@@ -196,10 +202,10 @@ function sendNewData(){
     $("#partAndComm").empty();
     $("#addedTimeslots").empty();
     $("#listitems").empty();
-    loadAppointments();
+    loadAppointments(); // damit ist das neue Appointment in der Liste einsehbar
 }
 
-function addVotes(){
+function addVotes(){ // fürs Voten und Kommentare abgeben, überprüft ob ein Name eingegeben wurde, Kommentar optional
     if(!$("#partName").val()){
         $("#nameError").remove();
         $("#name").after("<div id='nameError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen einen Namen eingeben um abzustimmen' readonly></div>")
@@ -220,7 +226,7 @@ function addVotes(){
     newVotes = JSON.stringify(newVotes);
     $("input").val("");
     console.log(newVotes);
-    $.ajax({
+    $.ajax({ // die Informationen werden ans Backend geschickt und dort verarbeitet
         type:"POST",
         url: "../backend/serviceHandler.php",
         chache: false,
