@@ -10,5 +10,4 @@ class Comment {
         $this->username = $username;
         $this->message = $message;
     }
-
 }

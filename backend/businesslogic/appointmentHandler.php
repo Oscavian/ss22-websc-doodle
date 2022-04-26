@@ -1,30 +1,29 @@
 <?php
 require_once "models/appointment.php";
+require_once "models/timeslot.php";
 require_once "models/comment.php";
 require_once "models/participant.php";
-require_once "models/timeslot.php";
 
 class AppointmentHandler {
     private $db;
 
-    public function __construct(){
+    public function __construct() {
         require_once "db/database.php";
         $this->db = new DataHandler();
     }
-
 
     public function getDb(): DataHandler {
         return $this->db;
     }
 
-    public function getById(int $id) : Appointment {
+    public function getById(int $id): Appointment {
         return new Appointment($this, $id);
     }
 
     public function getAppointmentList(): array {
         $result = $this->db->select("Select app_id from appointments");
         $app_list = array();
-        foreach ($result as $row){
+        foreach ($result as $row) {
             $app_list[] = $this->getBaseDataById($row["app_id"]);
         }
         return $app_list;
@@ -38,7 +37,7 @@ class AppointmentHandler {
     public function getAppointmentDetailsById(int $id): array {
 
         $appointment = $this->getById($id);
-        if (!$appointment->isValid){
+        if (!$appointment->isValid) {
             return ["success" => false, "msg" => "Assignment with ID $id does not exist!", "inputInvalid" => true];
         }
 
@@ -68,9 +67,7 @@ class AppointmentHandler {
      * @return array
      */
 
-    //TODO: addNewAppointment
-    public function newAppointment($payload): ?array
-    {
+    public function newAppointment($payload): ?array {
         if (!isset($payload->title) ||
             !isset($payload->creator) ||
             !isset($payload->description) ||
@@ -87,13 +84,13 @@ class AppointmentHandler {
         $creation_date = date("Y-m-d H:i:s", time());
         $payload->expiration_date = date("Y-m-d H:i:s", strtotime($payload->expiration_date));
         //check if expired date is later than creation date
-        if (strtotime($creation_date) > strtotime($payload->expiration_date)){
+        if (strtotime($creation_date) > strtotime($payload->expiration_date)) {
             $res["success"] = false;
             $res["invalidPayload"] = true;
             return $res;
         }
 
-        foreach ($payload->timeslots as $slot){
+        foreach ($payload->timeslots as $slot) {
             //format input date
             //TODO: maybe check if end is after start
             $slot->start_datetime = strtotime($slot->start_datetime);
@@ -105,19 +102,17 @@ class AppointmentHandler {
         $query = "insert into appointments (title, creator, description, location, creation_date, expiration_date) values (?, ?, ?, ?, ?, ?)";
         $new_app_id = $this->db->insert($query, [$payload->title, $payload->creator, $payload->description, $payload->location, $creation_date, $payload->expiration_date], "ssssss");
 
-        if (!$new_app_id){
+        if (empty($new_app_id)) {
             return ["success" => false, "invalidPayload" => true];
         }
 
-        foreach ($payload->timeslots as $slot){
-            if (!$this->db->insert("insert into timeslots (app_id, start_datetime, end_datetime) values (?, ?, ?)", [$new_app_id, $slot->start_datetime, $slot->end_datetime], "iss")){
+        foreach ($payload->timeslots as $slot) {
+            if (!$this->db->insert("insert into timeslots (app_id, start_datetime, end_datetime) values (?, ?, ?)", [$new_app_id, $slot->start_datetime, $slot->end_datetime], "iss")) {
                 return ["success" => false, "invalidTimeslots" => true];
             }
         }
 
-        /*$this->dh->addNewAppointment($payload->title, $payload->creator, $payload->description, $payload->location, $creation_date, $payload->expiration_date, $payload->timeslots)
-            ? $res["success"] = true : $res["success"] = false;*/
-        return ["success" => true, "msg" => "Appointment successfully created!"];
+        return ["success" => true, "appointment_id" => $new_app_id, "msg" => "Appointment successfully created!"];
     }
 
     /**
@@ -125,7 +120,8 @@ class AppointmentHandler {
      * {
      *      "app_id": "1",
      *      "slot_ids": ["1", "3", "15"],
-     *      "username": "Alice"
+     *      "username": "Alice",
+     *      "comment" : "Hello World"
      * }
      * @return array success boolean
      */
@@ -138,24 +134,28 @@ class AppointmentHandler {
             !is_array($payload->slot_ids)) {
             return ["success" => false, "invalidPayload" => true];
         }
-        foreach ($payload->slot_ids as $id){
-            if (!is_numeric($id)){
+        foreach ($payload->slot_ids as $id) {
+            if (!is_numeric($id)) {
                 return ["success" => false, "invalidPayload" => true, "msg" => "Invalid Slot IDs!"];
             }
         }
 
         $appointment = $this->getById($payload->app_id);
-        if (!$appointment->isValid){
+        if (!$appointment->isValid) {
             return ["success" => false, "msg" => "Appointment #$payload->app_id does not exist!"];
         }
 
-        $this->db->insert("insert into participants (username) values (?)", [$payload->username], "s");
-        $new_user_id = $this->db->getLastInsertId();
+        $new_user_id = $this->db->insert("insert into participants (username) values (?)", [$payload->username], "s");
 
-        foreach ($payload->slot_ids as $id){
+        foreach ($payload->slot_ids as $id) {
             $this->db->insert("insert into chosen_timeslots (user_id, slot_id) values (?, ?)", [$new_user_id, $id], "ii");
         }
 
-        return ["success" => true];
+        if (isset($payload->comment)){
+            $this->db->insert("insert into comments (user_id, message, app_id) values (?,?,?)", [$new_user_id, $payload->comment, $appointment->getId()], "isi");
+        }
+
+        return ["success" => true, "msg" => "Vote saved successfully!"];
     }
+
 }

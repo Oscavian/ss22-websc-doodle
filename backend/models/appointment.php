@@ -28,6 +28,10 @@ class Appointment {
         }
     }
 
+    public function getId() {
+        return $this->app_id;
+    }
+
     public function getBaseData() : ?array{
         if (!isset($this->app_id)){
             return null;
@@ -41,7 +45,7 @@ class Appointment {
         $this->creation_date = $result["creation_date"];
         $this->expiration_date = $result["expiration_date"];
 
-        if (strtotime($this->creation_date) > strtotime($this->expiration_date)){
+        if (strtotime("now") > strtotime($this->expiration_date)){
             $this->isExpired = true;
         } else {
             $this->isExpired = false;
@@ -71,6 +75,7 @@ class Appointment {
         }
 
         $chosen_timeslots = $this->db->select("select user_id, username, slot_id, app_id from timeslots join chosen_timeslots using(slot_id) join participants using(user_id) where app_id = ?", [$this->app_id], "i");
+
         foreach ($chosen_timeslots as $chosen){
             //avoid duplicate participants
             if ($this->containsParticipant($chosen["user_id"])){
@@ -92,11 +97,10 @@ class Appointment {
         }
 
         $comms = $this->db->select("select * from comments join participants using(user_id) where app_id = ?", [$this->app_id], "i", false);
-        if (isset($comms)) {
-            foreach ($comms as $comm) {
-                $this->comments[] = new Comment($comm["username"], $comm["app_id"], $comm["message"]);
-            }
+        foreach ($comms as $comm) {
+            $this->comments[] = new Comment($comm["username"], $comm["app_id"], $comm["message"]);
         }
+
 
         return $this->comments;
     }
@@ -107,18 +111,41 @@ class Appointment {
         }
         
         $slots = $this->db->select("select * from timeslots where app_id = ?", [$this->app_id], "i");
-        
-        if (isset($slots)){
-            foreach ($slots as $ts_data){
-                $this->timeslots[] = new Timeslot($ts_data["slot_id"], $ts_data["app_id"], $ts_data["start_datetime"], $ts_data["end_datetime"]);
-            }
+
+        foreach ($slots as $ts_data){
+            $this->timeslots[] = new Timeslot($ts_data["slot_id"], $ts_data["app_id"], $ts_data["start_datetime"], $ts_data["end_datetime"]);
         }
 
         return $this->timeslots;
     }
 
-    public function getId() {
-        return $this->app_id;
+
+    public function getTitle() {
+        return $this->title;
+    }
+
+
+    public function getCreator() {
+        return $this->creator;
+    }
+
+
+    public function getDescription() {
+        return $this->description;
+    }
+
+    public function getLocation() {
+        return $this->location;
+    }
+
+
+    public function getCreationDate() {
+        return $this->creation_date;
+    }
+
+
+    public function getExpirationDate() {
+        return $this->expiration_date;
     }
 
     public function containsParticipant($user_id): bool
