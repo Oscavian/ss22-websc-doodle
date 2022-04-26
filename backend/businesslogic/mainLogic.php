@@ -1,20 +1,22 @@
 <?php
-include("db/dataHandler.php");
+include("db/database.php");
+require_once "appointmentHandler.php";
 
 class MainLogic {
 
-    private $dh;
+    private $appointmentHandler;
     function __construct() {
-        $this->dh = new DataHandler();
+        $this->appointmentHandler = new AppointmentHandler();
     }
 
-    public function handleGetRequest(string $method, $param) {
+    public function handleGetRequest(string $method, $param): ?array {
+        $this->sanitizeGetArray();
         switch ($method) {
             case "getAppointmentList":
-                $res = $this->dh->getAppointmentList();
+                $res = $this->appointmentHandler->getAppointmentList();
                 break;
             case "getAppointmentById":
-                $res = $this->dh->getAppointmentById($param);
+                $res = $this->appointmentHandler->getAppointmentDetailsById($param);
                 break;
             default:
                 $res = null;
@@ -23,18 +25,17 @@ class MainLogic {
         return $res;
     }
 
-    public function handlePostRequest(object $payload)
-    {
+    public function handlePostRequest(object $payload): ?array {
+        $this->sanitizePayload($payload);
         switch ($payload->method){
             case "newAppointment":
-                $res = $this->newAppointment($payload);
+                $res = $this->appointmentHandler->newAppointment($payload);
                 break;
             case "addVotes":
-                $res = $this->addVotes($payload);
+                $res = $this->appointmentHandler->addVotes($payload);
                 break;
             default:
-                $res["success"] = false;
-                $res["invalidMethod"] = true;
+                $res = null;
                 break;
         }
 
@@ -43,95 +44,39 @@ class MainLogic {
 
     /**
      * @param $payload
-     *   {
-     *      "method": "newAppointment",
-     *      "title": "Spazieren",
-     *      "creator": "Lena",
-     *      "description": "Spazieren gehen im Wald",
-     *      "location": "Wien",
-     *      "expiration_date": "19-04-2022 00:00:00",
-     *      "timeslots": [
-     *          {
-     *              "start_datetime": "17-04-2022 12:00:00",
-     *              "end_datetime": "17-04-2022 17:30:00"
-     *          },
-     *          {
-     *              "start_datetime": "18-04-2022 13:00:00",
-     *              "end_datetime": "18-04-2022 19:30:00"
-     *          }
-     *      ]
-     *  }
-     * @return array
+     *  iterates through all $key => $val pairs including arrays of objects or strings
+     *  does NOT search through payload recursively, max. Depth is 1 (0 => root), so only for usage in this specific project
+     * @return void
      */
-    private function newAppointment($payload): ?array
-    {
-        if (!isset($payload->title) ||
-            !isset($payload->creator) ||
-            !isset($payload->description) ||
-            !isset($payload->location) ||
-            !isset($payload->expiration_date) ||
-            !isset($payload->timeslots) ||
-            !is_array($payload->timeslots)) {
-            $res["success"] = false;
-            $res["invalidPayload"] = true;
-            return $res;
+    private function sanitizePayload(&$payload){
+        foreach (get_object_vars($payload) as $key => $val){
+            if (is_array($val)){
+                foreach ($val as $v){
+                    if (is_object($v)){
+                        foreach (get_object_vars($v) as $k => $w) {
+                            $v->$k = $this->test_input($w);
+                        }
+                    } else {
+                        $v = $this->test_input($v);
+                    }
+                }
+            } else {
+                $payload->$key = $this->test_input($val);
+            }
         }
-
-        $creation_date = (int)date(time());
-        $payload->expiration_date = strtotime($payload->expiration_date);
-
-        //check if expired date is later than creation date
-        if ($creation_date > $payload->expiration_date){
-            $res["success"] = false;
-            $res["invalidPayload"] = true;
-            return $res;
-        }
-
-        $creation_date = date("Y-m-d H:i:s", $creation_date);
-        $payload->expiration_date = date("Y-m-d H:i:s", $payload->expiration_date);
-
-        foreach ($payload->timeslots as $slot){
-            //format input date
-            //TODO: maybe check if end is after start
-            $slot->start_datetime = strtotime($slot->start_datetime);
-            $slot->start_datetime = date("Y-m-d H:i:s", $slot->start_datetime);
-
-            $slot->end_datetime = strtotime($slot->end_datetime);
-            $slot->end_datetime = date("Y-m-d H:i:s", $slot->end_datetime);
-        }
-
-        $this->dh->addNewAppointment($payload->title, $payload->creator, $payload->description, $payload->location, $creation_date, $payload->expiration_date, $payload->timeslots)
-            ? $res["success"] = true : $res["success"] = false;
-        return $res;
     }
 
-    /**
-     * @param object $payload JSON Format e.g.:
-     * {
-     *      "app_id": "1",
-     *      "slot_ids": ["1", "3", "15"],
-     *      "username": "Alice"
-     * }
-     * @return array success boolean
-     */
-
-    private function addVotes(object $payload) {
-        if (!isset($payload->app_id) ||
-            !isset($payload->slot_ids) ||
-            !isset($payload->username) ||
-            !is_numeric($payload->app_id) ||
-            !is_array($payload->slot_ids)) {
-            $res["success"] = false;
-            $res["invalidPayload"] = true;
-            return $res;
+    private function sanitizeGetArray(){
+        foreach ($_GET as $key => $value){
+            $_GET[$key] = $this->test_input($value);
         }
+    }
 
-        $this->dh->addVotes($payload->app_id, $payload->slot_ids, $payload->username)
-            ? $res["success"] = true : $res["success"] = false;
-
-
-        $res["success"] = true;
-        return $res;
+    public function test_input($data): string {
+        $data = trim($data);
+        $data = stripslashes($data);
+        $data = htmlspecialchars($data);
+        return $data;
     }
 }
 
