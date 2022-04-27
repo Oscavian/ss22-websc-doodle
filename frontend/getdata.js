@@ -26,7 +26,7 @@ $(document).ready(function (){ // wird ausgeführt sobald die Seite geladen ist
 });
 
 function addNewTimeslot(counter){ // sorgt dafür dass weitere Möglichkeiten für Timeslots bei der Appointmenterstellung erscheinen
-    $("#addedTimeslots").append("<div class='input-group newTimeslots' id='newTimeslots'><span class='input-group-text input-group-left-example'>Timeslot " + counter + " von:</span><input class='form-control timeslot_start' type='datetime-local' onkeypress='return false' id='timeslot_start'><span class='input-group-text input-group-left-example'>bis:</span><input class='form-control timeslot_end' type='datetime-local' onkeypress='return false' id='timeslot__end'></div>")
+    $("#addedTimeslots").append("<div class='input-group newTimeslots' id='newTimeslots'><span class='input-group-text input-group-left-example'>Timeslot " + counter + " von:</span><input class='form-control timeslot_start' type='datetime-local' onkeypress='return false' id='timeslot_" + counter + "_start'><span class='input-group-text input-group-left-example'>bis:</span><input class='form-control timeslot_end' type='datetime-local' onkeypress='return false' id='timeslot_" + counter + "_end'></div>")
     var dateTimeNow = getDateAndTime();
     $("input[type=datetime-local]").attr('min', dateTimeNow);
     counter++;
