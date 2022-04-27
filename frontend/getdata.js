@@ -26,7 +26,7 @@ $(document).ready(function (){ // wird ausgeführt sobald die Seite geladen ist
 });
 
 function addNewTimeslot(counter){ // sorgt dafür dass weitere Möglichkeiten für Timeslots bei der Appointmenterstellung erscheinen
-    $("#addedTimeslots").append("<div class='input-group'><span class='input-group-text input-group-left-example'>Timeslot " + counter + " von:</span><input class='form-control' type='datetime-local' onkeypress='return false' id='timeslot_" + counter + "_start'><span class='input-group-text input-group-left-example'>bis:</span><input class='form-control' type='datetime-local' onkeypress='return false' id='timeslot_" + counter + "_end'></div>")
+    $("#addedTimeslots").append("<div class='input-group' id='newTimeslots'><span class='input-group-text input-group-left-example'>Timeslot " + counter + " von:</span><input class='form-control' type='datetime-local' onkeypress='return false' id='timeslot_start'><span class='input-group-text input-group-left-example'>bis:</span><input class='form-control' type='datetime-local' onkeypress='return false' id='timeslot__end'></div>")
     var dateTimeNow = getDateAndTime();
     $("input[type=datetime-local]").attr('min', dateTimeNow);
     counter++;
@@ -165,22 +165,19 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
     }
     var expiration_date = $("#newExpirationDate").val();
     $("#expirationError").remove();
-    var start_datetime = "";
-    var end_datetime = "";
-    var newTimeslots = [{start_datetime, end_datetime}];
+    //var newTimeslots = [{start_datetime, end_datetime}];
     let counter = 0;
     $("input[type=datetime-local]").each(function(){ // speichert alle Timeslots, abwechselnd als start und end Timeslot
+        console.log($(this).val());
         if(counter % 2 == 0){
-            
-            newTimeslots[counter].start_datetime = $(this).val();
-            console.log($(this).val());
+            //newTimeslots[counter].start_datetime = $(this).val();
         }
         else{
-            newTimeslots[counter].end_datetime = $(this).val();
+            //newTimeslots[counter].end_datetime = $(this).val();
             counter++;
         }
     });
-    var newData = {title: newTitle, creator: newCreator, description: newDescription, location: newLocation, expirationDate: expiration_date, timeslots: newTimeslots}
+    /*var newData = {title: newTitle, creator: newCreator, description: newDescription, location: newLocation, expirationDate: expiration_date, timeslots: newTimeslots}
     console.log(newData);
     newData = JSON.stringify(newData);
     $("input").val(""); // alle Eingabefelder werden geleert nachdem alle Informationen beschaffen wurden
@@ -193,17 +190,18 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
         dataType: "json",
         success: function(response){
             $("#messages").append("<p style='color: blue'><b>das Appointment wurde angelegt :)</b></p>");
-            $("#messages").show().delay(5000).fadeOut().delete();
+            $("#messages").show().delay(5000).fadeOut().empty();
         },
         error: function(){
             $("#messages").append("<p style='color: red'><b>Ein Fehler ist aufgetreten :(</b></p>");
-            $("#messages").show().delay(5000).fadeOut().delete();
+            $("#messages").show().delay(5000).fadeOut().empty();
         }
-    });
+    }); */
     $("#btnAddTimeslot").attr('onclick', 'addNewTimeslot(2)');
     $("#detailitem").empty();
     $("#timeslots").empty();
     $("#partAndComm").empty();
+    $("#details").hide();
     $("#addedTimeslots").empty();
     $("#listitems").empty();
     loadAppointments(); // damit ist das neue Appointment in der Liste einsehbar
@@ -242,7 +240,7 @@ function addVotes(){ // fürs Voten und Kommentare abgeben, überprüft ob ein N
         },
         error: function(){
             $("#messages").append("<p style='color: red'><b>Ein Fehler ist aufgetreten :(</b></p>");
-            $("#messages").show().delay(5000).fadeOut().delete();
+            $("#messages").show().delay(5000).fadeOut().empty();
         },
     });
     $("#detailitem").empty();
