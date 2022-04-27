@@ -26,7 +26,7 @@ $(document).ready(function (){ // wird ausgeführt sobald die Seite geladen ist
 });
 
 function addNewTimeslot(counter){ // sorgt dafür dass weitere Möglichkeiten für Timeslots bei der Appointmenterstellung erscheinen
-    $("#addedTimeslots").append("<div class='input-group' id='newTimeslots'><span class='input-group-text input-group-left-example'>Timeslot " + counter + " von:</span><input class='form-control' type='datetime-local' onkeypress='return false' id='timeslot_start'><span class='input-group-text input-group-left-example'>bis:</span><input class='form-control' type='datetime-local' onkeypress='return false' id='timeslot__end'></div>")
+    $("#addedTimeslots").append("<div class='input-group newTimeslots' id='newTimeslots'><span class='input-group-text input-group-left-example'>Timeslot " + counter + " von:</span><input class='form-control timeslot_start' type='datetime-local' onkeypress='return false' id='timeslot_start'><span class='input-group-text input-group-left-example'>bis:</span><input class='form-control timeslot_end' type='datetime-local' onkeypress='return false' id='timeslot__end'></div>")
     var dateTimeNow = getDateAndTime();
     $("input[type=datetime-local]").attr('min', dateTimeNow);
     counter++;
@@ -165,9 +165,39 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
     }
     var expiration_date = $("#newExpirationDate").val();
     $("#expirationError").remove();
-    //var newTimeslots = [{start_datetime, end_datetime}];
-    let counter = 0;
-    $("input[type=datetime-local]").each(function(){ // speichert alle Timeslots, abwechselnd als start und end Timeslot
+
+    let newTimeslots = [];
+
+    function Timeslot(start, end) {
+        this.start_datetime = start;
+        this.end_datetime = end;
+    }
+
+    $.each($(".newTimeslots"), () => {
+        //let timeslot = new Timeslot($("#timeslot_start").val(), $("#timeslot_end").val());
+        //newTimeslots.push(timeslot);
+        let timeslot = {
+            start_datetime: $(".timeslot_start").val(),
+            end_datetime:  $(".timeslot_end").val()
+        }
+        newTimeslots.push(timeslot);
+    });
+
+    /*$.each($(".newTimeslots"), () => {
+        //$.each($("#newTimeslots"), () => {
+            //let timeslot = new Timeslot($("#timeslot_start").val(), $("#timeslot_end").val());
+            //newTimeslots.push(timeslot);
+            let timeslot = {
+                start_datetime: $("#timeslot_start").val(),
+                end_datetime:  $("#timeslot_end").val()
+            }
+            newTimeslots.push(timeslot);
+        //});
+    });*/
+
+    console.log(newTimeslots);
+
+    /*$("input[type=datetime-local]").each(function(){ // speichert alle Timeslots, abwechselnd als start und end Timeslot
         console.log($(this).val());
         if(counter % 2 == 0){
             //newTimeslots[counter].start_datetime = $(this).val();
@@ -176,8 +206,9 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
             //newTimeslots[counter].end_datetime = $(this).val();
             counter++;
         }
-    });
-    /*var newData = {title: newTitle, creator: newCreator, description: newDescription, location: newLocation, expirationDate: expiration_date, timeslots: newTimeslots}
+    });*/
+    /*
+    var newData = {title: newTitle, creator: newCreator, description: newDescription, location: newLocation, expirationDate: expiration_date, timeslots: newTimeslots}
     console.log(newData);
     newData = JSON.stringify(newData);
     $("input").val(""); // alle Eingabefelder werden geleert nachdem alle Informationen beschaffen wurden
@@ -196,7 +227,7 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
             $("#messages").append("<p style='color: red'><b>Ein Fehler ist aufgetreten :(</b></p>");
             $("#messages").show().delay(5000).fadeOut().empty();
         }
-    }); */
+    });*/
     $("#btnAddTimeslot").attr('onclick', 'addNewTimeslot(2)');
     $("#detailitem").empty();
     $("#timeslots").empty();
