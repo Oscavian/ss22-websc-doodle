@@ -21,6 +21,7 @@ $(document).ready(function (){ // wird ausgeführt sobald die Seite geladen ist
     $('#timeslot_1').attr('min', dateNow);
     $("#liste").hide();
     $("#details").hide();
+    $("#messages").hide();
     loadAppointments();
 });
 
@@ -32,7 +33,7 @@ function addNewTimeslot(counter){ // sorgt dafür dass weitere Möglichkeiten f�
     $("#btnAddTimeslot").attr('onclick', 'addNewTimeslot(' + counter + ')');
 }
 
-function loadAppointments(){ // liest und schreibt alle Appointments die es gibt
+function loadAppointments(){ // liest und schreibt alle Appointments die es in der DB gibt
     $.ajax({
         type:"GET",
         url: "../backend/serviceHandler.php",
@@ -166,15 +167,16 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
     $("#expirationError").remove();
     var start_datetime = "";
     var end_datetime = "";
-    var newTimeslots = [];
+    var newTimeslots = [{start_datetime, end_datetime}];
     let counter = 0;
     $("input[type=datetime-local]").each(function(){ // speichert alle Timeslots, abwechselnd als start und end Timeslot
         if(counter % 2 == 0){
-            start_datetime = $(this).val();
+            
+            newTimeslots[counter].start_datetime = $(this).val();
+            console.log($(this).val());
         }
         else{
-            end_datetime = $(this).val();
-            newTimeslots[counter] = {start_datetime: start_datetime, end_datetime: end_datetime};
+            newTimeslots[counter].end_datetime = $(this).val();
             counter++;
         }
     });
@@ -190,10 +192,12 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
         data: {method: "newAppointment", param: newData},
         dataType: "json",
         success: function(response){
-            $("<p>Appointment wurde hinzugefügt</p>").before("#anlegen")
+            $("#messages").append("<p style='color: blue'><b>das Appointment wurde angelegt :)</b></p>");
+            $("#messages").show().delay(5000).fadeOut().delete();
         },
         error: function(){
-            $("<p style='color: red'><b>Ein Fehler ist aufgetreten :(</b></p>").before("#anlegen")
+            $("#messages").append("<p style='color: red'><b>Ein Fehler ist aufgetreten :(</b></p>");
+            $("#messages").show().delay(5000).fadeOut().delete();
         }
     });
     $("#btnAddTimeslot").attr('onclick', 'addNewTimeslot(2)');
@@ -222,7 +226,8 @@ function addVotes(){ // fürs Voten und Kommentare abgeben, überprüft ob ein N
             votesArray.push($(this).attr('checkbox-id'));
         }
     });
-    var newVotes = {slot_ids: votesArray, name: partName, comment: partComm}
+    //var app_id = 
+    var newVotes = {app_id: app_id, slot_ids: votesArray, username: partName, comment: partComm}
     newVotes = JSON.stringify(newVotes);
     $("input").val("");
     console.log(newVotes);
@@ -236,7 +241,8 @@ function addVotes(){ // fürs Voten und Kommentare abgeben, überprüft ob ein N
 
         },
         error: function(){
-
+            $("#messages").append("<p style='color: red'><b>Ein Fehler ist aufgetreten :(</b></p>");
+            $("#messages").show().delay(5000).fadeOut().delete();
         },
     });
     $("#detailitem").empty();
