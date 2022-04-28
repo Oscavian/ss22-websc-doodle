@@ -26,7 +26,7 @@ $(document).ready(function (){ // wird ausgeführt sobald die Seite geladen ist
 });
 
 function addNewTimeslot(counter){ // sorgt dafür dass weitere Möglichkeiten für Timeslots bei der Appointmenterstellung erscheinen
-    $("#addedTimeslots").append("<div class='input-group newTimeslots' id='newTimeslots'><span class='input-group-text input-group-left-example'>Timeslot " + counter + " von:</span><input class='form-control timeslot_start' type='datetime-local' onkeypress='return false' id='timeslot_" + counter + "_start'><span class='input-group-text input-group-left-example'>bis:</span><input class='form-control timeslot_end' type='datetime-local' onkeypress='return false' id='timeslot_" + counter + "_end'></div>")
+    $("#addedTimeslots").append("<div class='input-group newTimeslots' id='newTimeslots_" + counter + "'><span class='input-group-text input-group-left-example'>Timeslot " + counter + " von:</span><input class='form-control timeslot_start' type='datetime-local' onkeypress='return false' id='timeslot_" + counter + "_start'><span class='input-group-text input-group-left-example'>bis:</span><input class='form-control timeslot_end' type='datetime-local' onkeypress='return false' id='timeslot_" + counter + "_end'></div>")
     var dateTimeNow = getDateAndTime();
     $("input[type=datetime-local]").attr('min', dateTimeNow);
     counter++;
@@ -64,6 +64,7 @@ function loadAppointments(){ // liest und schreibt alle Appointments die es in d
 }
 
 function loadDetails(){ // zeigt die Details und Votemöglichkeiten für das ausgewählte Appointment (wenn nicht abgelaufen)
+    $("#nameError").remove();
     $("#detailitem").empty();
     $("#partAndComm").empty();
     $("#timeslots").empty();
@@ -79,7 +80,7 @@ function loadDetails(){ // zeigt die Details und Votemöglichkeiten für das aus
             if(response.isExpired == true){ // Meldung für den User falls Appointment bereits abgelaufen
                 $("#detailitem").append("<li class='list-group-item' style='color: red'><b>Dieses Appointment ist bereits abgelaufen!</b></li>");
             }
-            $("#detailitem").append("<li class='list-group-item'><b>" + response.title + "</b></li>");
+            $("#detailitem").append("<li class='list-group-item' app-id='" + response.app_id + "' id='titleAndAppId'><b>" + response.title + "</b></li>");
             $("#detailitem").append("<li class='list-group-item'>von <u>" + response.creator + "</u></li>");
             $("#detailitem").append("<li class='list-group-item'>" + response.description + "</li>");
             $("#detailitem").append("<li class='list-group-item'>" + response.location + "</li>");
@@ -172,44 +173,17 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
         this.start_datetime = start;
         this.end_datetime = end;
     }
-
-    $.each($(".newTimeslots"), () => {
-        //let timeslot = new Timeslot($("#timeslot_start").val(), $("#timeslot_end").val());
-        //newTimeslots.push(timeslot);
-        let timeslot = {
-            start_datetime: $(".timeslot_start").val(),
-            end_datetime:  $(".timeslot_end").val()
-        }
-        newTimeslots.push(timeslot);
+    let counter = 0;
+    $("input[type=datetime-local]").each(function(){
+        counter++;
     });
+    counter = counter/2;
+    for(let i = 1; i <= counter; i++){
+        let timeslot = new Timeslot($("#timeslot_" + i + "_start").val(), $("#timeslot_" + i + "_end").val());
+        newTimeslots.push(timeslot);
+    };
 
-    /*$.each($(".newTimeslots"), () => {
-        //$.each($("#newTimeslots"), () => {
-            //let timeslot = new Timeslot($("#timeslot_start").val(), $("#timeslot_end").val());
-            //newTimeslots.push(timeslot);
-            let timeslot = {
-                start_datetime: $("#timeslot_start").val(),
-                end_datetime:  $("#timeslot_end").val()
-            }
-            newTimeslots.push(timeslot);
-        //});
-    });*/
-
-    console.log(newTimeslots);
-
-    /*$("input[type=datetime-local]").each(function(){ // speichert alle Timeslots, abwechselnd als start und end Timeslot
-        console.log($(this).val());
-        if(counter % 2 == 0){
-            //newTimeslots[counter].start_datetime = $(this).val();
-        }
-        else{
-            //newTimeslots[counter].end_datetime = $(this).val();
-            counter++;
-        }
-    });*/
-    /*
-    var newData = {title: newTitle, creator: newCreator, description: newDescription, location: newLocation, expirationDate: expiration_date, timeslots: newTimeslots}
-    console.log(newData);
+    var newData = {method: "newAppointment", title: newTitle, creator: newCreator, description: newDescription, location: newLocation, expiration_date: expiration_date, timeslots: newTimeslots}
     newData = JSON.stringify(newData);
     $("input").val(""); // alle Eingabefelder werden geleert nachdem alle Informationen beschaffen wurden
     console.log(newData);
@@ -217,7 +191,7 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
         type: "POST",
         url: "../backend/serviceHandler.php",
         chache: false,
-        data: {method: "newAppointment", param: newData},
+        data: newData,
         dataType: "json",
         success: function(response){
             $("#messages").append("<p style='color: blue'><b>das Appointment wurde angelegt :)</b></p>");
@@ -227,7 +201,7 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
             $("#messages").append("<p style='color: red'><b>Ein Fehler ist aufgetreten :(</b></p>");
             $("#messages").show().delay(5000).fadeOut().empty();
         }
-    });*/
+    });
     $("#btnAddTimeslot").attr('onclick', 'addNewTimeslot(2)');
     $("#detailitem").empty();
     $("#timeslots").empty();
@@ -252,11 +226,12 @@ function addVotes(){ // fürs Voten und Kommentare abgeben, überprüft ob ein N
     var votesArray = [];
     $('input[type=checkbox]').each(function(){
         if($(this).is(':checked')){
-            votesArray.push($(this).attr('checkbox-id'));
+            let id_number = parseInt($(this).attr('checkbox-id'));
+            votesArray.push(id_number);
         }
     });
-    //var app_id = 
-    var newVotes = {app_id: app_id, slot_ids: votesArray, username: partName, comment: partComm}
+    var newApp_id = parseInt($("#titleAndAppId").attr('app-id'));
+    var newVotes = {method: "addVotes", app_id: newApp_id, slot_ids: votesArray, username: partName, comment: partComm}
     newVotes = JSON.stringify(newVotes);
     $("input").val("");
     console.log(newVotes);
@@ -264,12 +239,13 @@ function addVotes(){ // fürs Voten und Kommentare abgeben, überprüft ob ein N
         type:"POST",
         url: "../backend/serviceHandler.php",
         chache: false,
-        data: {method: "addVotes", param: newVotes},
+        data: newVotes,
         dataType: "json",
         success: function(response){
-
+            $("#messages").append("<p style='color: blue'><b>Erfolgreich gevotet :)</b></p>");
+            $("#messages").show().delay(5000).fadeOut().empty();
         },
-        error: function(){
+        error: function(e){
             $("#messages").append("<p style='color: red'><b>Ein Fehler ist aufgetreten :(</b></p>");
             $("#messages").show().delay(5000).fadeOut().empty();
         },
