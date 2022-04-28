@@ -1,19 +1,20 @@
 function getDate(){ // findet das aktuelle Datum heraus
-    var today = new Date();
-    var dd = String(today.getDate()).padStart(2, '0');
-    var mm = String(today.getMonth() + 1).padStart(2, '0');
-    var yyyy = today.getFullYear();
-    var dateNow = yyyy + '-' + mm + '-' + dd;
+    let today = new Date();
+    let dd = String(today.getDate()).padStart(2, '0');
+    let mm = String(today.getMonth() + 1).padStart(2, '0');
+    let yyyy = today.getFullYear();
+    let dateNow = yyyy + '-' + mm + '-' + dd;
     return dateNow;
 }
 function getDateAndTime(){ // findet zusätzlich die aktuelle Zeit heraus
-    var dateTimeNow = getDate();
-    var today = new Date();
-    var hh = String(today.getHours());
-    var mm = String(today.getMinutes());
+    let dateTimeNow = getDate();
+    let today = new Date();
+    let hh = String(today.getHours());
+    let mm = String(today.getMinutes());
     dateTimeNow = dateTimeNow + 'T' + hh + ':' + mm;
     return dateTimeNow;
 }
+
 $(document).ready(function (){ // wird ausgeführt sobald die Seite geladen ist
     var dateNow = getDate();
     $('#newExpirationDate').attr('min', dateNow); // hierdurch kann kein vergangenes Datum ausgewählt werden
@@ -27,7 +28,7 @@ $(document).ready(function (){ // wird ausgeführt sobald die Seite geladen ist
 
 function addNewTimeslot(counter){ // sorgt dafür dass weitere Möglichkeiten für Timeslots bei der Appointmenterstellung erscheinen
     $("#addedTimeslots").append("<div class='input-group newTimeslots' id='newTimeslots_" + counter + "'><span class='input-group-text input-group-left-example'>Timeslot " + counter + " von:</span><input class='form-control timeslot_start' type='datetime-local' onkeypress='return false' id='timeslot_" + counter + "_start'><span class='input-group-text input-group-left-example'>bis:</span><input class='form-control timeslot_end' type='datetime-local' onkeypress='return false' id='timeslot_" + counter + "_end'></div>")
-    var dateTimeNow = getDateAndTime();
+    let dateTimeNow = getDateAndTime();
     $("input[type=datetime-local]").attr('min', dateTimeNow);
     counter++;
     $("#btnAddTimeslot").attr('onclick', 'addNewTimeslot(' + counter + ')');
@@ -100,28 +101,38 @@ function loadDetails(){ // zeigt die Details und Votemöglichkeiten für das aus
                 counter++;
             });
             counter = 0;
-            $("#partAndComm").append("<li class='list-group-item'><b>derzeitige Votes</b></li>");
-            $.each(response.participants, function() {
-                $("#partAndComm").append("<li class='list-group-item'><u>" + response.participants[counter].username + "</u> hat folgende Timeslots gewählt:</li>");
-                let partSlotCounter = 0
-                $.each(response.participants[counter].slot_ids, function(){
-                    let slotCounter = 0;
-                    $.each(response.timeslots, function(){
-                        if((response.participants[counter].slot_ids[partSlotCounter]) == (response.timeslots[slotCounter].slot_id)){
-                            $("#partAndComm").append("<li class='list-group-item'>" + response.timeslots[slotCounter].start_datetime + " bis " + response.timeslots[slotCounter].end_datetime + "</li>");
-                        }
-                        slotCounter++;
+            if(!(response.participants.length === 0)){
+                $("#partAndComm").append("<li class='list-group-item'><b>derzeitige Votes</b></li>");
+                $.each(response.participants, function() {
+                    $("#partAndComm").append("<li class='list-group-item'><u>" + response.participants[counter].username + "</u> hat folgende Timeslots gewählt:</li>");
+                    let partSlotCounter = 0
+                    $.each(response.participants[counter].slot_ids, function(){
+                        let slotCounter = 0;
+                        $.each(response.timeslots, function(){
+                            if((response.participants[counter].slot_ids[partSlotCounter]) == (response.timeslots[slotCounter].slot_id)){
+                                $("#partAndComm").append("<li class='list-group-item'>" + response.timeslots[slotCounter].start_datetime + " bis " + response.timeslots[slotCounter].end_datetime + "</li>");
+                            }
+                            slotCounter++;
+                        });
+                        partSlotCounter++;
                     });
-                    partSlotCounter++;
+                    counter++;
                 });
-                counter++;
-            });
-            $("#partAndComm").append("<li class='list-group-item'><b>derzeitige Kommentare</b></li>");
-            counter = 0;
-            $.each(response.comments, function(){ // zeigt jeden Kommentar und den zugehörigen User an
-                $("#partAndComm").append("<li class='list-group-item'>" + response.comments[counter].username + ": " + response.comments[counter].message + "</li>");
-                counter++;
-            });
+            }
+            else{
+                $("#partAndComm").append("<li class='list-group-item'><b>noch keine Votes, sei der Erste</b></li>");
+            }
+            if(!(response.comments.length === 0)){
+                $("#partAndComm").append("<li class='list-group-item'><b>derzeitige Kommentare</b></li>");
+                    counter = 0;
+                    $.each(response.comments, function(){ // zeigt jeden Kommentar und den zugehörigen User an
+                        $("#partAndComm").append("<li class='list-group-item'>" + response.comments[counter].username + ": " + response.comments[counter].message + "</li>");
+                        counter++;
+                    });
+            }
+            else{
+                $("#partAndComm").append("<li class='list-group-item'><b>noch keine Kommentare, gib als erster deine Meinung ab</b></li>");
+            }
         },
         error: function(response){
             $("#entryFields").hide();
@@ -136,44 +147,41 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
     $("#partAndComm").empty();
     $("#timeslots").empty();
     $("#details").hide();
+    $("#titleError").remove();
+    $("#creatorError").remove();
+    $("#descriptionError").remove();
+    $("#locationError").remove();
+    $("#expirationError").remove();
+    let error = 0;
     if(!$("#newTitle").val()){
-        $("#titleError").remove();
-        $("#titleCard").after("<div id='titleError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen einen Titel eingeben um das Appointment zu erstellen' readonly></div>")
+        $("#titleCard").after("<div id='titleError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen einen Titel eingeben um das Appointment zu erstellen' readonly></div>");
+        error = 1;
+    }
+    if(!$("#newCreator").val()){
+        $("#creatorCard").after("<div id='creatorError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen einen Namen eingeben um das Appointment zu erstellen' readonly></div>");
+        error = 1;
+    }
+    if(!$("#newDescription").val()){
+        $("#descriptionCard").after("<div id='descriptionError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen eine Beschreibung eingeben um das Appointment zu erstellen' readonly></div>");
+        error = 1;
+    }
+    if(!$("#newLocation").val()){
+        $("#locationCard").after("<div id='locationError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen einen Ort eingeben um das Appointment zu erstellen' readonly></div>");
+        error = 1;
+    }
+    if(!$("#newExpirationDate").val()){
+        $("#expirationCard").after("<div id='expirationError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen ein Ablaufdatum eingeben um das Appointment zu erstellen' readonly></div>");
+        error = 1;
+    }
+    if(error === 1){ // egal wie viele und welche Error auftreten, gehts nicht weiter
         return;
     }
     var newTitle = $("#newTitle").val();
-    $("#titleError").remove();
-    if(!$("#newCreator").val()){
-        $("#creatorError").remove();
-        $("#creatorCard").after("<div id='creatorError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen einen Namen eingeben um das Appointment zu erstellen' readonly></div>")
-        return;
-    }
     var newCreator = $("#newCreator").val();
-    $("#creatorError").remove();
-    if(!$("#newDescription").val()){
-        $("#descriptionError").remove();
-        $("#descriptionCard").after("<div id='descriptionError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen eine Beschreibung eingeben um das Appointment zu erstellen' readonly></div>")
-        return;
-    }
     var newDescription = $("#newDescription").val();
-    $("#descriptionError").remove();
-    if(!$("#newLocation").val()){
-        $("#locationError").remove();
-        $("#locationCard").after("<div id='locationError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen einen Ort eingeben um das Appointment zu erstellen' readonly></div>")
-        return;
-    }
     var newLocation = $("#newLocation").val();
-    $("#locationError").remove();
-    if(!$("#newExpirationDate").val()){
-        $("#expirationError").remove();
-        $("#expirationCard").after("<div id='expirationError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen ein Ablaufdatum eingeben um das Appointment zu erstellen' readonly></div>")
-        return;
-    }
     var expiration_date = $("#newExpirationDate").val();
-    $("#expirationError").remove();
-
-    let newTimeslots = [];
-
+    var newTimeslots = [];
     function Timeslot(start, end) {
         this.start_datetime = start;
         this.end_datetime = end;
@@ -188,9 +196,9 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
         newTimeslots.push(timeslot);
     };
 
-    var newData = {method: "newAppointment", title: newTitle, creator: newCreator, description: newDescription, location: newLocation, expiration_date: expiration_date, timeslots: newTimeslots}
+    let newData = {method: "newAppointment", title: newTitle, creator: newCreator, description: newDescription, location: newLocation, expiration_date: expiration_date, timeslots: newTimeslots}
     newData = JSON.stringify(newData);
-    $("input").val(""); // alle Eingabefelder werden geleert nachdem alle Informationen beschaffen wurden
+    $("input").val(""); // alle Eingabefelder werden geleert, nachdem alle Informationen beschaffen wurden
     $("#addedTimeslots").empty();
     console.log(newData);
     $.ajax({ // schicken ans Backend für die weitere Verarbeitung und Eintragung in die DB
@@ -205,7 +213,7 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
         },
         error: function(){
             $("#messages").append("<p style='color: red'><b>Ein Fehler ist aufgetreten :(</b></p>");
-            $("#messages").show().delay(5000).fadeOut().empty();
+            $("#messages").show().delay(5000).fadeOut();
         }
     });
     $("#btnAddTimeslot").attr('onclick', 'addNewTimeslot(2)');
@@ -218,21 +226,21 @@ function addVotes(){ // fürs Voten und Kommentare abgeben, überprüft ob ein N
         $("#name").after("<div id='nameError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen einen Namen eingeben um abzustimmen' readonly></div>")
         return;
     }
-    var partName = $("#partName").val();
-    var partComm = "";
+    let partName = $("#partName").val();
+    let partComm = "";
     if($("#partComm").val()){
         partComm = $("#partComm").val();
     }
-    var votesArray = [];
+    let votesArray = [];
     $('input[type=checkbox]').each(function(){
         if($(this).is(':checked')){
             let id_number = parseInt($(this).attr('checkbox-id'));
             votesArray.push(id_number);
         }
     });
-    var newApp_id = parseInt($("#titleAndAppId").attr('app-id'));
+    let newApp_id = parseInt($("#titleAndAppId").attr('app-id'));
     $("input").val("");
-    var newVotes = {method: "addVotes", app_id: newApp_id, slot_ids: votesArray, username: partName, comment: partComm}
+    let newVotes = {method: "addVotes", app_id: newApp_id, slot_ids: votesArray, username: partName, comment: partComm}
     newVotes = JSON.stringify(newVotes);
     console.log(newVotes);
     $.ajax({ // die Informationen werden ans Backend geschickt und dort verarbeitet
