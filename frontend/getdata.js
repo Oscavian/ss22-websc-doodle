@@ -34,6 +34,7 @@ function addNewTimeslot(counter){ // sorgt dafür dass weitere Möglichkeiten f�
 }
 
 function loadAppointments(){ // liest und schreibt alle Appointments die es in der DB gibt
+    $("#listitems").empty();
     $.ajax({
         type:"GET",
         url: "../backend/serviceHandler.php",
@@ -131,6 +132,10 @@ function loadDetails(){ // zeigt die Details und Votemöglichkeiten für das aus
 }
 
 function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft zuerst ob alle Felder ausgefüllt wurden
+    $("#detailitem").empty();
+    $("#partAndComm").empty();
+    $("#timeslots").empty();
+    $("#details").hide();
     if(!$("#newTitle").val()){
         $("#titleError").remove();
         $("#titleCard").after("<div id='titleError' class='input-group'><input class='form-control' type='text' id='nameError' style='color: red' value='Sie müssen einen Titel eingeben um das Appointment zu erstellen' readonly></div>")
@@ -186,6 +191,7 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
     var newData = {method: "newAppointment", title: newTitle, creator: newCreator, description: newDescription, location: newLocation, expiration_date: expiration_date, timeslots: newTimeslots}
     newData = JSON.stringify(newData);
     $("input").val(""); // alle Eingabefelder werden geleert nachdem alle Informationen beschaffen wurden
+    $("#addedTimeslots").empty();
     console.log(newData);
     $.ajax({ // schicken ans Backend für die weitere Verarbeitung und Eintragung in die DB
         type: "POST",
@@ -203,12 +209,6 @@ function sendNewData(){ // fürs Erstellen eines neuen Appointments, überprüft
         }
     });
     $("#btnAddTimeslot").attr('onclick', 'addNewTimeslot(2)');
-    $("#detailitem").empty();
-    $("#timeslots").empty();
-    $("#partAndComm").empty();
-    $("#details").hide();
-    $("#addedTimeslots").empty();
-    $("#listitems").empty();
     loadAppointments(); // damit ist das neue Appointment in der Liste einsehbar
 }
 
@@ -231,9 +231,9 @@ function addVotes(){ // fürs Voten und Kommentare abgeben, überprüft ob ein N
         }
     });
     var newApp_id = parseInt($("#titleAndAppId").attr('app-id'));
+    $("input").val("");
     var newVotes = {method: "addVotes", app_id: newApp_id, slot_ids: votesArray, username: partName, comment: partComm}
     newVotes = JSON.stringify(newVotes);
-    $("input").val("");
     console.log(newVotes);
     $.ajax({ // die Informationen werden ans Backend geschickt und dort verarbeitet
         type:"POST",
@@ -241,11 +241,11 @@ function addVotes(){ // fürs Voten und Kommentare abgeben, überprüft ob ein N
         chache: false,
         data: newVotes,
         dataType: "json",
-        success: function(response){
+        success: function(){
             $("#messages").append("<p style='color: blue'><b>Erfolgreich gevotet :)</b></p>");
             $("#messages").show().delay(5000).fadeOut().empty();
         },
-        error: function(e){
+        error: function(){
             $("#messages").append("<p style='color: red'><b>Ein Fehler ist aufgetreten :(</b></p>");
             $("#messages").show().delay(5000).fadeOut().empty();
         },
